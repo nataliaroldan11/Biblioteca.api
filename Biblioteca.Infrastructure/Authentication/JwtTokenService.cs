@@ -2,13 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Biblioteca.Application.Authentication;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Biblioteca.Infrastructure.Authentication;
 
-public class JwtTokenService
+public class JwtTokenService : ITokenService
 {
     private readonly JwtOptions _options;
 
@@ -17,7 +16,7 @@ public class JwtTokenService
         _options = options.Value;
     }
 
-    public AuthTokenResponse CreateToken(IdentityUser user)
+    public AuthTokenResponse CreateToken(AuthenticatedUser user)
     {
         var now = DateTimeOffset.UtcNow;
         var expires = now.AddMinutes(_options.ExpirationMinutes);

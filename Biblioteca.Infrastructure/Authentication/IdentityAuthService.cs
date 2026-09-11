@@ -3,43 +3,41 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Biblioteca.Infrastructure.Authentication;
 
-public class IdentityAuthService : IAuthService
+// Adaptador de Identity: gestiona usuarios y credenciales; no emite tokens.
+public class IdentityAuthService : IIdentityService
 {
     private readonly UserManager<IdentityUser> _users;
-    private readonly JwtTokenService _tokens;
 
-    public IdentityAuthService(UserManager<IdentityUser> users, JwtTokenService tokens)
+    public IdentityAuthService(UserManager<IdentityUser> users)
     {
         _users = users;
-        _tokens = tokens;
     }
 
-    public async Task<RegistrationResult> RegisterAsync(RegisterRequest request)
+    public async Task<RegistrationResult> RegisterAsync(string email, string password)
     {
-        var email = request.Email.Trim();
         var user = new IdentityUser { UserName = email, Email = email };
 
         // Identity calcula el hash y guarda el usuario. Nunca guardamos Password.
-        var result = await _users.CreateAsync(user, request.Password);
+        var result = await _users.CreateAsync(user, password);
 
         return result.Succeeded
             ? new RegistrationResult(user.Id, Array.Empty<string>())
             : new RegistrationResult(null, result.Errors.Select(error => error.Description).ToArray());
     }
 
-    public async Task<AuthTokenResponse?> LoginAsync(LoginRequest request)
+    public async Task<AuthenticatedUser?> AuthenticateAsync(string email, string password)
     {
-        var user = await _users.FindByEmailAsync(request.Email.Trim());
+        var user = await _users.FindByEmailAsync(email);
         if (user is null || await _users.IsLockedOutAsync(user))
             return null;
 
-        if (!await _users.CheckPasswordAsync(user, request.Password))
+        if (!await _users.CheckPasswordAsync(user, password))
         {
             await _users.AccessFailedAsync(user);
             return null;
         }
 
         await _users.ResetAccessFailedCountAsync(user);
-        return _tokens.CreateToken(user);
+        return new AuthenticatedUser(user.Id, user.Email ?? string.Empty);
     }
 }

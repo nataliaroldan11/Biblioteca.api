@@ -16,10 +16,10 @@ La solución aplica una separación por capas inspirada en Clean Architecture:
 | Proyecto | Responsabilidad |
 | --- | --- |
 | Biblioteca.Domain | Entidad Book y contrato IBookRepository. |
-| Biblioteca.Application | Casos de uso de libros, DTOs y contrato IAuthService. |
+| Biblioteca.Application | Casos de uso de libros y autenticación, DTOs y contratos IIdentityService e ITokenService. |
 | Biblioteca.Infrastructure | Implementaciones con EF Core, contexto, migraciones, Identity y emisión de JWT. |
 | Biblioteca.Api | Controladores HTTP, configuración y registro de dependencias. |
-| Biblioteca.Application.Tests | Pruebas unitarias del caso de uso de creación. |
+| Biblioteca.Application.Tests | Pruebas unitarias de creación de libros, registro y login. |
 | Biblioteca.Api.Tests | Pruebas de integración HTTP con una base temporal. |
 
 Application depende de Domain. Infrastructure depende de Domain y Application porque implementa sus contratos. Api conecta los servicios. Domain no depende de EF Core, Identity ni ASP.NET Core.
@@ -115,6 +115,17 @@ POST y PUT de libros reciben:
 
 Envía `Content-Type: application/json`. El identificador se genera en SQL Server; para consultar, actualizar o eliminar utiliza el id recibido al crear el libro.
 
+## Casos de uso de autenticación
+
+`AuthController` recibe las solicitudes HTTP y ejecuta `RegisterUserUseCase` o `LoginUseCase`, situados en `Biblioteca.Application/UseCases/Authentication`.
+
+- `RegisterUserUseCase` normaliza el correo y solicita el registro mediante `IIdentityService`. Conserva la contraseña recibida y propaga los errores del registro.
+- `LoginUseCase` solicita autenticar las credenciales mediante `IIdentityService`. Si recibe una identidad válida, pide un token a `ITokenService`; si recibe null, no emite ningún token.
+- `IdentityAuthService`, en Infrastructure, implementa `IIdentityService` con `UserManager<IdentityUser>`. Conserva la validación, el hash y el bloqueo de Identity. Devuelve `AuthenticatedUser`, un tipo propio de Application.
+- `JwtTokenService`, en Infrastructure, implementa `ITokenService` y crea el JWT a partir de esa identidad. No depende de `IdentityUser`.
+
+Application coordina las operaciones mediante interfaces y no depende de Identity ni de la biblioteca JWT. El contrato anterior IAuthService fue sustituido por estos dos contratos. No hay cambios de esquema de base de datos ni de los endpoints. Las cuatro pruebas unitarias de autenticación comprueban normalización, errores de registro, rechazo sin emisión de token y emisión para la identidad autenticada.
+
 ## Autenticación y Postman
 
 Importa `postman/Biblioteca-JWT.postman_collection.json`. La colección se llama **Biblioteca - JWT y CRUD** y utiliza `https://localhost:7149` como baseUrl.
@@ -138,7 +149,7 @@ En Visual Studio abre **Prueba > Explorador de pruebas > Ejecutar todas las prue
 dotnet test Bibliotecata.slnx
 ```
 
-La suite contiene 17 casos: tres unitarios en Application.Tests y catorce de integración en Api.Tests. Las pruebas unitarias utilizan un repositorio de prueba. Las de integración levantan la API y utilizan SQLite en memoria con configuración JWT exclusiva de pruebas; no necesitan iniciar manualmente la API ni SQL Server.
+La suite contiene 21 casos: siete unitarios en Application.Tests y catorce de integración en Api.Tests. Las pruebas unitarias utilizan un repositorio de prueba. Las de integración levantan la API y utilizan SQLite en memoria con configuración JWT exclusiva de pruebas; no necesitan iniciar manualmente la API ni SQL Server.
 
 Se comprueba la creación válida y el título vacío; registro y hash persistido; correo duplicado; credenciales inválidas; bloqueo temporal; consultas públicas; operaciones protegidas; JWT vencido o con firma, emisor o audiencia incorrectos; y el recorrido de creación, actualización y eliminación con JWT.
 

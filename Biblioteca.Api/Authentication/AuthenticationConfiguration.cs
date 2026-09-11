@@ -1,5 +1,6 @@
 using System.Text;
 using Biblioteca.Application.Authentication;
+using Biblioteca.Application.UseCases.Authentication;
 using Biblioteca.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -18,8 +19,10 @@ public static class AuthenticationConfiguration
                 "Configura Jwt:Key con una clave aleatoria de al menos 32 bytes en User Secrets.")
             .ValidateOnStart();
 
-        services.AddScoped<JwtTokenService>();
-        services.AddScoped<IAuthService, IdentityAuthService>();
+        services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IIdentityService, IdentityAuthService>();
+        services.AddScoped<RegisterUserUseCase>();
+        services.AddScoped<LoginUseCase>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
         services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
