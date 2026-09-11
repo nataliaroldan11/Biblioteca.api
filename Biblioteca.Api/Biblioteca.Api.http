@@ -1,0 +1,29 @@
+# @baseUrl = https://localhost:7149
+
+# ### Crear un libro
+# POST {{baseUrl}}/api/books
+# Content-Type: application/json
+
+# {
+#   "title": "cien años de soledad",
+#   "author": "gabriel garcia marquez",
+#   "isbn": "9788497592208",
+#   "publicationyear": 1967
+# }
+
+# ### Consultar un libro
+# GET {{baseUrl}}/api/books/1
+
+# ### Consultar un libro inexistente
+# GET {{baseUrl}}/api/books/999999
+
+# ### Intentar crear un libro sin título
+# POST {{baseUrl}}/api/books
+# Content-Type: application/json
+
+# {
+#   "title": "",
+#   "author": "Gabriel Garcia Marquez",
+#   "isbn": "9788497592208",
+#   "publicationYear": 1967
+# }
