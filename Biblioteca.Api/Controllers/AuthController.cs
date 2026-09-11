@@ -1,4 +1,5 @@
 using Biblioteca.Application.Authentication;
+using Biblioteca.Application.UseCases.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,17 +11,19 @@ namespace Biblioteca.Api.Controllers;
 [RequestSizeLimit(16384)]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _auth;
+    private readonly RegisterUserUseCase _register;
+    private readonly LoginUseCase _login;
 
-    public AuthController(IAuthService auth)
+    public AuthController(RegisterUserUseCase register, LoginUseCase login)
     {
-        _auth = auth;
+        _register = register;
+        _login = login;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
-        var result = await _auth.RegisterAsync(request);
+        var result = await _register.ExecuteAsync(request);
         if (!result.Succeeded)
         {
             return ValidationProblem(new ValidationProblemDetails(
@@ -37,7 +40,7 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var token = await _auth.LoginAsync(request);
+        var token = await _login.ExecuteAsync(request);
         if (token is null)
         {
             // Misma respuesta para usuario desconocido, contraseña incorrecta o bloqueo temporal.
